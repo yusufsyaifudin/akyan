@@ -1,7 +1,6 @@
 # Akyan
 
-> Etymology
-`Akyan` is from Sanskrit language which mean "eyes" or "vision"
+> Etymology: `Akyan` is from Sanskrit language which mean "eyes" or "vision"
 
 Akyan is libary for extracting some information from news in Bahasa Indonesia. This is early stage of Akyan development, and currently Akyan have one feature:
 
