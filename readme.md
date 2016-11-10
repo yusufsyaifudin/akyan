@@ -44,7 +44,6 @@ NewsLocation newsLocation = new NewsLocation(Location.TREE_LEVEL.DISTRICT);
 String text1 = "Hutan Pinus Mangunan di Desa Dlingo, Mangunan, Kabupaten Bantul, DI Yogyakarta terkenal sebagai tempat selfie dan berfoto ria. Deretan pohon pinus tampak seperti lokasi syuting film di utara Eropa sana.";
 
 ArrayList<LocationModel> treeLocation1 = newsLocation.UseDictionaryLookUp(text1);
-
 ```
 
 If you convert the `treeLocation1` variable into json using `Gson` library, you will see the output like this:
@@ -95,6 +94,18 @@ If you convert the `treeLocation1` variable into json using `Gson` library, you 
   }
 ]
 
+```
+
+Maybe you curious where the string that matched to location name in database. To see tagged string in html, you can see via method `getHtml()`.
+
+```java
+String html = newsLocation.getHtml();
+```
+
+And then `html` variable will return value like this:
+
+```html
+Hutan Pinus Mangunan di Desa <span class="district-3402100">Dlingo</span>, Mangunan, <span class="regency-3402">Kabupaten <span class="district-3402070">Bantul</span></span>, <span class="province-34">di Yogyakarta</span> terkenal sebagai tempat selfie dan berfoto ria. Deretan pohon pinus tampak seperti lokasi syuting film di utara Eropa sana.
 ```
 
 

@@ -1,6 +1,7 @@
 package akyan.nlp.news.extractor;
 
 import akyan.nlp.news.helpers.LocationModel;
+import akyan.nlp.news.helpers.MapUtil;
 import akyan.nlp.news.helpers.locationmodel.DistrictCounter;
 import akyan.nlp.news.helpers.locationmodel.ProvinceCounter;
 import akyan.nlp.news.helpers.locationmodel.RegencyCounter;
@@ -10,12 +11,11 @@ import wilayah.indonesia.model.District;
 import wilayah.indonesia.model.Province;
 import wilayah.indonesia.model.Regency;
 
-import java.util.ArrayList;
-import java.util.List;
+import java.util.*;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
-import static akyan.nlp.news.helpers.RegexUtil.preg_match_all;
-import static akyan.nlp.news.helpers.RegexUtil.preg_quote;
-import static akyan.nlp.news.helpers.RegexUtil.str_ireplace;
+import static akyan.nlp.news.helpers.RegexUtil.*;
 
 /**
  * Created by yusuf on 06/11/16.
@@ -26,6 +26,8 @@ public class NewsLocation {
     private List<Province> PROVINCES;
     private Location.TREE_LEVEL TREE_LEVEL;
     private String[] exclude = {};
+    private LinkedHashMap<String, String> taggedDataMap  = new LinkedHashMap<>();
+    private String originalText;
 
     public NewsLocation() {
         try {
@@ -72,6 +74,7 @@ public class NewsLocation {
      * @return ArrayList<LocationModel>
      */
     public ArrayList<LocationModel> UseDictionaryLookUp(String news_text) {
+        this.originalText = news_text; // set to current context variable
         ArrayList<LocationModel> locationModels = new ArrayList<>();
 
         PROVINCES.forEach(p -> {
@@ -84,6 +87,14 @@ public class NewsLocation {
             if(countProvinceName > 0) {
                 localProvinceCounter.setCount(countProvinceName);
                 locationModel.setTotal(countProvinceName); // always increment the total value
+
+                // add to map
+                if( taggedDataMap.containsKey(provinceName.toLowerCase()) ) {
+                    taggedDataMap.put(provinceName.toLowerCase(),
+                            taggedDataMap.get(provinceName.toLowerCase()) + " province-" + p.getId());
+                } else {
+                    taggedDataMap.put(provinceName.toLowerCase(), " province-" + p.getId());
+                }
             }
 
             // lookup in regency level
@@ -133,6 +144,37 @@ public class NewsLocation {
         return locationModels;
     }
 
+    public LinkedHashMap<String, String> getTaggedDataMap() {
+        taggedDataMap = (LinkedHashMap<String, String>) MapUtil.sortByKeyStringLength(taggedDataMap);
+        return taggedDataMap;
+    }
+
+    public String getHtml() {
+        String html = this.originalText;
+        // new data map for save original string, taggedDataMap is used to save founded regex no case sensitive
+        HashMap<String, String> newDataMap = new HashMap<>();
+
+        for(Map.Entry<String, String> dataMap : getTaggedDataMap().entrySet()) {
+            String regex = "(?i)\\b" + dataMap.getKey().toLowerCase().trim() + "\\b";
+            Pattern pattern = Pattern.compile(regex);
+            Matcher matcher = pattern.matcher(html);
+
+            while (matcher.find()) {
+                String originalToken = matcher.group();
+                newDataMap.put(originalToken, dataMap.getValue().trim());
+            }
+        }
+
+        newDataMap = (LinkedHashMap<String, String>) MapUtil.sortByKeyStringLength(newDataMap);
+
+        for(Map.Entry<String, String> dataMap : newDataMap.entrySet()) {
+            String replacer = "<span class=\"" + dataMap.getValue().trim() + "\"" + ">" + dataMap.getKey().trim() + "</span>";
+            html = str_replace(new String[]{dataMap.getKey().trim()}, replacer, html);
+        }
+
+        return html;
+    }
+
     private RegencyCounter LookUpRegency(Regency regency, String news_text) {
         // if tree level is province then return null, otherwise let it be processed
         if(TREE_LEVEL.equals(Location.TREE_LEVEL.PROVINCE)) {
@@ -145,6 +187,14 @@ public class NewsLocation {
         if(countRegencyName > 0) {
             RegencyCounter tmp = LocationModel.toRegencyCounter(regency);
             tmp.setCount(countRegencyName);
+
+            // add to map
+            if( taggedDataMap.containsKey(regencyName.toLowerCase()) ) {
+                taggedDataMap.put(regencyName.toLowerCase(),
+                        taggedDataMap.get(regencyName.toLowerCase()) + " regency-" + regency.getId());
+            } else {
+                taggedDataMap.put(regencyName.toLowerCase(), " regency-" + regency.getId());
+            }
 
             return tmp;
         }
@@ -165,10 +215,18 @@ public class NewsLocation {
             DistrictCounter tmp = LocationModel.toDistrictCounter(district);
             tmp.setCount(countDistrictName);
 
+            if( taggedDataMap.containsKey(districtName.toLowerCase()) ) {
+                taggedDataMap.put(districtName.toLowerCase(),
+                        taggedDataMap.get(districtName.toLowerCase()) + " district-" + district.getId());
+            } else {
+                taggedDataMap.put(districtName.toLowerCase(), " district-" + district.getId());
+            }
             return tmp;
         }
 
         return null;
     }
+
+
 
 }

@@ -30,4 +30,13 @@ public class RegexUtil {
 
         return newString.trim();
     }
+
+    public static String str_replace(String[] exclude, String replacement, String str) {
+        String newString = str.trim();
+        for(String ex : exclude) {
+            newString = newString.replaceAll("\\b" + preg_quote(ex) + "\\b", replacement);
+        }
+
+        return newString.trim();
+    }
 }
