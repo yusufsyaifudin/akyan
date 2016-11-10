@@ -2,6 +2,7 @@ package akyan.nlp.news.extractor;
 
 import akyan.nlp.news.helpers.LocationModel;
 import akyan.nlp.news.helpers.MapUtil;
+import akyan.nlp.news.helpers.NewsLocationResult;
 import akyan.nlp.news.helpers.locationmodel.DistrictCounter;
 import akyan.nlp.news.helpers.locationmodel.ProvinceCounter;
 import akyan.nlp.news.helpers.locationmodel.RegencyCounter;
@@ -27,7 +28,6 @@ public class NewsLocation {
     private Location.TREE_LEVEL TREE_LEVEL;
     private String[] exclude = {};
     private LinkedHashMap<String, String> taggedDataMap  = new LinkedHashMap<>();
-    private String originalText;
 
     public NewsLocation() {
         try {
@@ -73,8 +73,7 @@ public class NewsLocation {
      * @param news_text
      * @return ArrayList<LocationModel>
      */
-    public ArrayList<LocationModel> UseDictionaryLookUp(String news_text) {
-        this.originalText = news_text; // set to current context variable
+    public NewsLocationResult UseDictionaryLookUp(String news_text) {
         ArrayList<LocationModel> locationModels = new ArrayList<>();
 
         PROVINCES.forEach(p -> {
@@ -141,23 +140,22 @@ public class NewsLocation {
         // sorting
         locationModels.sort((o1, o2) -> o2.getTotal().compareTo(o1.getTotal()));
 
-        return locationModels;
+        NewsLocationResult newsLocationResult = new NewsLocationResult();
+        newsLocationResult.setLocation(locationModels);
+        newsLocationResult.setHtml(Htmlize(news_text, taggedDataMap));
+
+        return newsLocationResult;
     }
 
-    public LinkedHashMap<String, String> getTaggedDataMap() {
+    private String Htmlize(String text, HashMap<String, String> taggedDataMap) {
         taggedDataMap = (LinkedHashMap<String, String>) MapUtil.sortByKeyStringLength(taggedDataMap);
-        return taggedDataMap;
-    }
-
-    public String getHtml() {
-        String html = this.originalText;
         // new data map for save original string, taggedDataMap is used to save founded regex no case sensitive
         HashMap<String, String> newDataMap = new HashMap<>();
 
-        for(Map.Entry<String, String> dataMap : getTaggedDataMap().entrySet()) {
+        for(Map.Entry<String, String> dataMap : taggedDataMap.entrySet()) {
             String regex = "(?i)\\b" + dataMap.getKey().toLowerCase().trim() + "\\b";
             Pattern pattern = Pattern.compile(regex);
-            Matcher matcher = pattern.matcher(html);
+            Matcher matcher = pattern.matcher(text);
 
             while (matcher.find()) {
                 String originalToken = matcher.group();
@@ -169,10 +167,10 @@ public class NewsLocation {
 
         for(Map.Entry<String, String> dataMap : newDataMap.entrySet()) {
             String replacer = "<span class=\"" + dataMap.getValue().trim() + "\"" + ">" + dataMap.getKey().trim() + "</span>";
-            html = str_replace(new String[]{dataMap.getKey().trim()}, replacer, html);
+            text = str_replace(new String[]{dataMap.getKey().trim()}, replacer, text);
         }
 
-        return html;
+        return text;
     }
 
     private RegencyCounter LookUpRegency(Regency regency, String news_text) {
