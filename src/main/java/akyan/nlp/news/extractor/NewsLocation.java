@@ -71,10 +71,10 @@ public class NewsLocation {
     }
 
     /**
-     * Will return ArrayList of LocationModel
-     * LocationModel is model like wilayah.indonesia.model.Province but contain total and count of founded data
+     * Will return NewsLocationResult
+     * Contain total and count of founded data and html
      * @param news_text
-     * @return ArrayList<LocationModel>
+     * @return NewsLocationResult
      */
     public NewsLocationResult UseDictionaryLookUp(String news_text) {
         ArrayList<LocationModel> locationModels = new ArrayList<>();
@@ -150,6 +150,13 @@ public class NewsLocation {
         return newsLocationResult;
     }
 
+    /**
+     * System will predict the NER tag before looking for existence using UseDictionaryLookUp
+     * @param news_text
+     * @param withPunctuation
+     * @param nerModel
+     * @return NewsLocationResult
+     */
     public NewsLocationResult UseHmmPrediction(String news_text, Boolean withPunctuation, NERModel nerModel) {
         TextSequence textSequence = new TextSequence();
 
