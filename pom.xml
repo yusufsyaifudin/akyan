@@ -39,5 +39,10 @@
       <artifactId>wilayah-indonesia</artifactId>
       <version>0.0.3</version>
     </dependency>
+    <dependency>
+      <groupId>com.github.yusufsyaifudin</groupId>
+      <artifactId>indonesia-ner</artifactId>
+      <version>1.0.1</version>
+    </dependency>
   </dependencies>
 </project>

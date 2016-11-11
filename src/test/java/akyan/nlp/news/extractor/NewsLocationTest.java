@@ -24,7 +24,7 @@ public class NewsLocationTest {
     Logger logger = Logger.getLogger(NewsLocationTest.class);
     Gson gson = new GsonBuilder().disableHtmlEscaping().create();
     public NewsLocationTest() {
-        org.apache.log4j.BasicConfigurator.configure();
+
     }
 
     @Test
@@ -32,7 +32,7 @@ public class NewsLocationTest {
         NewsLocationResult result = newsLocation.UseDictionaryLookUp(text1);
         ArrayList<LocationModel> treeLocation1 = result.getLocation();
         assertTrue(treeLocation1.get(0).getProvince().getName().equals("DI YOGYAKARTA"));
-        logger.debug(gson.toJson(result));
+        logger.info(gson.toJson(result));
     }
 
     @Test
@@ -40,6 +40,6 @@ public class NewsLocationTest {
         NewsLocationResult result = newsLocation.UseDictionaryLookUp(text2);
         ArrayList<LocationModel> treeLocation2 = result.getLocation();
         assertTrue(treeLocation2.get(0).getProvince().getName().equals("JAWA TENGAH"));
-        logger.debug(gson.toJson(result));
+        logger.info(gson.toJson(result));
     }
 }

@@ -13,7 +13,7 @@ import static org.junit.Assert.assertEquals;
 public class RegexUtilTest {
 
     public RegexUtilTest() {
-        org.apache.log4j.BasicConfigurator.configure();
+
     }
 
     @Test

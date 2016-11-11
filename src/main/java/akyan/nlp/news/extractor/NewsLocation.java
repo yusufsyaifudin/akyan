@@ -11,6 +11,9 @@ import wilayah.indonesia.Location;
 import wilayah.indonesia.model.District;
 import wilayah.indonesia.model.Province;
 import wilayah.indonesia.model.Regency;
+import yusufs.nlp.nerid.NERModel;
+import yusufs.nlp.nerid.Prediction;
+import yusufs.nlp.nerid.utils.TextSequence;
 
 import java.util.*;
 import java.util.regex.Matcher;
@@ -145,6 +148,44 @@ public class NewsLocation {
         newsLocationResult.setHtml(Htmlize(news_text, taggedDataMap));
 
         return newsLocationResult;
+    }
+
+    public NewsLocationResult UseHmmPrediction(String news_text, Boolean withPunctuation, NERModel nerModel) {
+        TextSequence textSequence = new TextSequence();
+
+        Prediction prediction = new Prediction();
+        ArrayList<TextSequence.Sentence> sentences = prediction.predict(news_text, withPunctuation, nerModel);
+
+        ArrayList<TextSequence.Sentence> newSentences = new ArrayList<>();
+        StringBuilder locationString = new StringBuilder();
+
+        sentences.forEach(sentence -> {
+            ArrayList<TextSequence.Words> newWords = new ArrayList<>();
+            sentence.getWords().forEach(word -> {
+                if(word.getXmlTag().equals("LOCATION")) {
+                    newWords.add(word);
+                    locationString.append(word.getToken() + " ");
+                }
+            });
+
+            TextSequence.Sentence newSentence = textSequence.new Sentence();
+            newSentence.setOriginalSentence(sentence.getOriginalSentence());
+            newSentence.setTokenizedSentence(sentence.getTokenizedSentence());
+            newSentence.setWord(newWords);
+
+            newSentences.add(newSentence);
+        });
+
+        String locations = locationString.toString().trim();
+        logger.info(locations);
+
+        NewsLocationResult result = UseDictionaryLookUp(locations);
+
+        // manipulate html response to full text,
+        // if this not run, html will return only partial data that tagged as LOCATION
+        String html = Htmlize(news_text, this.taggedDataMap);
+        result.setHtml(html);
+        return result;
     }
 
     private String Htmlize(String text, HashMap<String, String> taggedDataMap) {
