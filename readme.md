@@ -9,6 +9,16 @@ Akyan is libary for extracting some information from news in Bahasa Indonesia. T
 * Extract location mentioned in news.
 
 
+## Table of contents
+  * [Table of contents](#table-of-contents)
+  * [Installation](#installation)
+  * [APIs](#apis)
+    * [Extract Location](#extract-location)
+    * [Using HMM Prediction](#using-hmm-prediction)
+    * [API Note](#api-note)
+
+
+
 ## Installation
 
 You can use jitpack and install dependency from active branch `master`.
@@ -170,3 +180,99 @@ Hutan Pinus Mangunan di Desa <span class="district-3402100">Dlingo</span>, Mangu
 ```
 
 
+### Using HMM Prediction
+
+> What the difference between this method and UseDictionaryLookUp's method?
+
+
+This method will eventually call `UseDictionaryLookUp()` method. But, before it actually called, the method will try to predict which token that predicted as **LOCATION** using Hidden Markov Model algorithm. That said, if HMM fail to detect the token as **LOCATION**, you may get blank result (only string token that have NER label as **LOCATION** will be look up). You can see the algorithm in file [NewsLocation.java](https://github.com/yusufsyaifudin/akyan/blob/master/src/main/java/akyan/nlp/news/extractor/NewsLocation.java).
+
+
+
+> Why use this method?
+
+
+You may want location be predicted using scholastic method. This can be achived using HMM which dependent from [Indonesia NER repository](https://github.com/yusufsyaifudin/indonesia-ner). You may build your own model, as mentioned in [Indonesia NER repository](https://github.com/yusufsyaifudin/indonesia-ner) as follows:
+
+```java
+Train train = new Train();
+NERModel model;
+
+try {
+    model = train.doTrain(String trainingData, Boolean withPunctuation);
+} catch (Exception e) {
+    throw new Exception(e.getMessage());
+}
+```
+
+Then you can use returned model to get prediction. But for simple example, you can use pretrained data using `ner_model_yusufs.json` to predict:
+
+```java
+Gson gson = new GsonBuilder().disableHtmlEscaping().create();
+NewsLocation newsLocation = new NewsLocation(Location.TREE_LEVEL.DISTRICT);
+NERModel nerModel = new NERModel();
+
+String text = "Hutan Pinus Mangunan di Desa Dlingo, Mangunan, Kabupaten Bantul, DI Yogyakarta terkenal sebagai tempat selfie dan berfoto ria. Deretan pohon pinus tampak seperti lokasi syuting film di utara Eropa sana.";
+
+File modelfile = new File("./resources/model/ner_model_yusufs.json");
+NewsLocationResult result = newsLocation.UseHmmPrediction(text, true, nerModel.loadModel(modelfile));
+
+System.out.println(gson.toJson(result));
+```
+
+The `result` variable will return data:
+
+```json
+{
+  "location": [
+    {
+      "province": {
+        "id": "34",
+        "name": "DI YOGYAKARTA",
+        "alt_name": "DI YOGYAKARTA",
+        "latitude": 7.7956,
+        "longitude": 110.3695,
+        "count": 0,
+        "regencies": [
+          {
+            "id": "3402",
+            "province_id": "34",
+            "name": "KABUPATEN BANTUL",
+            "alt_name": "KABUPATEN BANTUL",
+            "latitude": -7.9,
+            "longitude": 110.36667,
+            "count": 1,
+            "districts": [
+              {
+                "id": "3402070",
+                "regency_id": "3402",
+                "name": "BANTUL",
+                "alt_name": "Bantul, Bantul Regency, Special Region of Yogyakarta, Indonesia",
+                "latitude": -7.89146,
+                "longitude": 110.33615,
+                "count": 1
+              },
+              {
+                "id": "3402100",
+                "regency_id": "3402",
+                "name": "DLINGO",
+                "alt_name": "Dlingo, Bantul Regency, Special Region of Yogyakarta, Indonesia",
+                "latitude": -7.91915,
+                "longitude": 110.46106,
+                "count": 1
+              }
+            ]
+          }
+        ]
+      },
+      "total": 3
+    }
+  ],
+  "html": "Hutan Pinus Mangunan di Desa <span class=\"district-3402100 district-3402100\">Dlingo<\/span>, Mangunan, <span class=\"regency-3402 regency-3402\">Kabupaten <span class=\"district-3402070 district-3402070\">Bantul<\/span><\/span>, <span class=\"province-34\">DI Yogyakarta<\/span> terkenal sebagai tempat selfie dan berfoto ria. Deretan pohon pinus tampak seperti lokasi syuting film di utara Eropa sana."
+}
+```
+
+
+### API Note
+
+Please use `disableHtmlEscaping()` in `GsonBuilder` since "characters such as <, >, =, etc. are escaped because if the JSON string evaluated by Gson is embedded in an XHTML page then we do not know what characters are actually wrapping this JSON string.", please read more in this link [http://stackoverflow.com/questions/23363843/gson-disablehtmlescaping-why-gson-html-escapes-by-default-in-the-first-place](http://stackoverflow.com/questions/23363843/gson-disablehtmlescaping-why-gson-html-escapes-by-default-in-the-first-place).
