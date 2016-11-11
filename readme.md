@@ -23,21 +23,29 @@ Akyan is libary for extracting some information from news in Bahasa Indonesia. T
 
 You can use jitpack and install dependency from active branch `master`.
 
-```
+Add this to repository list:
+
+```xml
 <repositories>
   <repository>
     <id>jitpack.io</id>
     <url>https://jitpack.io</url>
   </repository>
 </repositories>
-<dependency>
-  <groupId>com.github.yusufsyaifudin</groupId>
-  <artifactId>akyan</artifactId>
-  <version>-SNAPSHOT</version>
-</dependency>
 ```
 
-After installation please extract this zip file into your `resources` directory in your root project.
+And this to dependency list:
+```xml
+<dependencies>
+    <dependency>
+      <groupId>com.github.yusufsyaifudin</groupId>
+      <artifactId>akyan</artifactId>
+      <version>0.0.1</version>
+    </dependency>
+</dependencies>
+```
+
+After installation please copy data inside `resources` in this project into your `resources` directory in your root project.
 
 ## APIs
 
