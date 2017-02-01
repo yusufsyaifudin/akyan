@@ -6,11 +6,14 @@ import akyan.nlp.news.helpers.NewsLocationResult;
 import akyan.nlp.news.helpers.locationmodel.DistrictCounter;
 import akyan.nlp.news.helpers.locationmodel.ProvinceCounter;
 import akyan.nlp.news.helpers.locationmodel.RegencyCounter;
+import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
 import org.apache.log4j.Logger;
 import wilayah.indonesia.Location;
 import wilayah.indonesia.model.District;
 import wilayah.indonesia.model.Province;
 import wilayah.indonesia.model.Regency;
+import yusufs.generator.randstring.RandomStringGenerator;
 import yusufs.nlp.nerid.NERModel;
 import yusufs.nlp.nerid.Prediction;
 import yusufs.nlp.nerid.utils.TextSequence;
@@ -35,7 +38,7 @@ public class NewsLocation {
     public NewsLocation() {
         try {
             TREE_LEVEL = Location.TREE_LEVEL.DISTRICT;
-            PROVINCES = Location.ProvinceTrees(Location.TREE_LEVEL.DISTRICT);
+            PROVINCES = Location.ProvinceTrees();
         } catch (Exception e) {
             e.printStackTrace();
         }
@@ -45,7 +48,7 @@ public class NewsLocation {
         try {
             this.exclude = exclude;
             TREE_LEVEL = Location.TREE_LEVEL.DISTRICT;
-            PROVINCES = Location.ProvinceTrees(Location.TREE_LEVEL.DISTRICT);
+            PROVINCES = Location.ProvinceTrees();
         } catch (Exception e) {
             e.printStackTrace();
         }
@@ -54,7 +57,7 @@ public class NewsLocation {
     public NewsLocation(Location.TREE_LEVEL tree_level) {
         try {
             TREE_LEVEL = tree_level;
-            PROVINCES = Location.ProvinceTrees(tree_level);
+            PROVINCES = Location.ProvinceTrees();
         } catch (Exception e) {
             e.printStackTrace();
         }
@@ -64,7 +67,7 @@ public class NewsLocation {
         try {
             this.exclude = exclude;
             TREE_LEVEL = tree_level;
-            PROVINCES = Location.ProvinceTrees(tree_level);
+            PROVINCES = Location.ProvinceTrees();
         } catch (Exception e) {
             e.printStackTrace();
         }
@@ -163,34 +166,72 @@ public class NewsLocation {
         Prediction prediction = new Prediction();
         ArrayList<TextSequence.Sentence> sentences = prediction.predict(news_text, withPunctuation, nerModel);
 
-        ArrayList<TextSequence.Sentence> newSentences = new ArrayList<>();
         StringBuilder locationString = new StringBuilder();
+        String new_news_text = news_text;
 
-        sentences.forEach(sentence -> {
-            ArrayList<TextSequence.Words> newWords = new ArrayList<>();
-            sentence.getWords().forEach(word -> {
+        HashMap<String, String> replacedLocationString = new HashMap<>();
+
+        for (TextSequence.Sentence sentence : sentences) {
+            for (TextSequence.Words word : sentence.getWords()) {
                 if(word.getXmlTag().equals("LOCATION")) {
-                    newWords.add(word);
-                    locationString.append(word.getToken() + " ");
+                    String token = word.getToken();
+                    locationString.append(token + " ");
+
+                    // Matched word should be replaced as random string.
+                    // For later use, the replaced string must be saved.
+                    String randomString = RandomStringGenerator.generateRandomString(10, RandomStringGenerator.Mode.ALPHANUMERIC);
+
+                    // if have same key,
+                    if (replacedLocationString.containsKey(token) == false) {
+                        replacedLocationString.put(token, randomString);
+
+                        // then use old random string to remove, instead create a new one
+                        randomString = replacedLocationString.get(token);
+                    }
+
+                    // this will ensure replaced string will still same as long as they have same key (word)
+                    new_news_text = new_news_text.replace(token, randomString);
                 }
-            });
-
-            TextSequence.Sentence newSentence = textSequence.new Sentence();
-            newSentence.setOriginalSentence(sentence.getOriginalSentence());
-            newSentence.setTokenizedSentence(sentence.getTokenizedSentence());
-            newSentence.setWord(newWords);
-
-            newSentences.add(newSentence);
-        });
+            }
+        }
 
         String locations = locationString.toString().trim();
         logger.info(locations);
 
         NewsLocationResult result = UseDictionaryLookUp(locations);
 
+        // The this.taggedDataMap is a hash map contain location word (i.e "DI Yogyakarta") as key
+        // and id of location for class name (i.e "province-34")
+        // so the key must be changed to matched random string in variable
+        HashMap<String, String> newTaggedDataMap  = new HashMap<>();
+        for(Map.Entry<String, String> data : replacedLocationString.entrySet()) {
+            String key = data.getKey().toLowerCase(); // this is original word string in lowercase
+            String value = data.getValue(); // this is random string
+
+            // only tagged
+            if(this.taggedDataMap.containsKey(key)) {
+                // changed from "yogyakarta" => "province-34" to "randomstring" => "province-34"
+                newTaggedDataMap.put(value, this.taggedDataMap.get(key));
+            }
+        }
+
+        logger.debug("matched data in database: " + this.taggedDataMap);
+        logger.debug("replaced key as random string from map: " + newTaggedDataMap);
+        logger.debug("words predicted as location: " + replacedLocationString);
+
         // manipulate html response to full text,
         // if this not run, html will return only partial data that tagged as LOCATION
-        String html = Htmlize(news_text, this.taggedDataMap);
+        String html = Htmlize(new_news_text, newTaggedDataMap);
+
+        // now variable `html` have a string that have been tagged using html tag (<span>)
+        // we need replaced all random string generated by random generator using appropriate word
+        for(Map.Entry<String, String> data : replacedLocationString.entrySet()) {
+            String key = data.getKey();
+            String value = data.getValue();
+
+            html = html.replace(value, key);
+        }
+
         result.setHtml(html);
         return result;
     }
